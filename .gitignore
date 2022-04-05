@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# video files
+*.mp4
+
+# mac files
+.DS_Store
