@@ -1,14 +1,12 @@
-import matplotlib.pyplot as plt
 import cv2 as cv
 from cv2 import VideoCapture
-from matplotlib.pyplot import figure, flag
 import numpy as np
-import time
 
 
-class NewtonTracker:
-    """Newton Tracker
+class LKTracker:
+    """LK Tracker
     
+    A basic tracker class that uses the opencv LK point tracker.
     """
 
     def __init__(self):
@@ -18,14 +16,12 @@ class NewtonTracker:
                                     minDistance=7,
                                     blockSize=7)
         # Parameters for lucas kanade optical flow
-        self._lk_params = dict(winSize=(5, 5),
-                               maxLevel=3,
+        self._lk_params = dict(winSize=(15, 15),
+                               maxLevel=2,
                                criteria=(
             cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT,
             10,
-            0.03),
-            flags=cv.OPTFLOW_LK_GET_MIN_EIGENVALS, 
-            minEigThreshold=1e-3)
+            0.03))
         self._color = np.random.randint(0, 255, (100, 3))
 
         self.cap = None  # VideoCapture object
@@ -33,11 +29,6 @@ class NewtonTracker:
         self.prev_gray = None  # grayscale of previous frame
         self.roi = None  # region of interest'
         self.p0 = None  # old points
-
-        self.x_points = None
-        self.y_points = None
-        self.x_error = None
-        self.y_error = None
 
     def load_video_sequence(self, filename: str):
         """Load and return the (.mp4) video specified by ``filename``.
@@ -71,11 +62,6 @@ class NewtonTracker:
 
         self.p0 = cv.goodFeaturesToTrack(
             self.prev_gray, mask=input_mask, **self._feature_params)
-        shape = np.shape(self.p0)
-        
-        points = self.p0.reshape((shape[0], 2)).T
-        self.x_points = [points[0]]
-        self.y_points = [points[1]]
 
         return self.p0
 
@@ -92,12 +78,13 @@ class NewtonTracker:
 
             gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
-            next_points, status, err = cv.calcOpticalFlowPyrLK(
+            p1, st, err = cv.calcOpticalFlowPyrLK(
                 self.prev_gray, gray, self.p0, None, **self._lk_params)
+
             # Select good points
-            if next_points is not None:
-                good_new = next_points
-                good_old = self.p0
+            if p1 is not None:
+                good_new = p1[st == 1]
+                good_old = self.p0[st == 1]
 
             # draw the tracks
             for i, (new, old) in enumerate(zip(good_new, good_old)):
@@ -116,23 +103,15 @@ class NewtonTracker:
             img = cv.add(frame, mask)
 
             cv.imshow('frame', img)
-            
+
             # Now update the previous frame and previous points
             self.prev_gray = gray.copy()
             self.p0 = good_new.reshape(-1, 1, 2)
-            points = self.p0.reshape((np.shape(self.p0)[0], 2)).T
-            self.x_points = np.append(self.x_points, [points[0]], axis=0)
-            self.y_points = np.append(self.y_points, [points[1]], axis=0)
 
-        
             if cv.waitKey(1) == ord('q'):
                 break
 
-
     def close_tracker(self):
         """Close all windows and release the VideoCapture."""
-        np.savetxt("x.csv", self.x_points, delimiter=",")
-        np.savetxt("y.csv", self.y_points, delimiter=",")
-
         self.cap.release()
         cv.destroyAllWindows()
