@@ -8,36 +8,26 @@ import time
 
 class NewtonTracker:
     """Newton Tracker
-    
+
     """
 
     def __init__(self):
-        # params for ShiTomasi corner detection
-        self._feature_params = dict(maxCorners=100,
-                                    qualityLevel=0.3,
-                                    minDistance=7,
-                                    blockSize=7)
-        # Parameters for lucas kanade optical flow
-        self._lk_params = dict(winSize=(5, 5),
-                               maxLevel=3,
-                               criteria=(
-            cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT,
-            10,
-            0.03),
-            flags=cv.OPTFLOW_LK_GET_MIN_EIGENVALS, 
-            minEigThreshold=1e-3)
-        self._color = np.random.randint(0, 255, (100, 3))
+        self.use_mask = False
+        self.img = None
+        self.mask = None
+        self.image_window = "Source Image"
+        self.templ_window = "Template Window"
+        self.diff_window = "Diff Window"
+        self.match_method = 0
 
-        self.cap = None  # VideoCapture object
-        self.prev_frame = None  # previous frame
-        self.prev_gray = None  # grayscale of previous frame
-        self.roi = None  # region of interest'
-        self.p0 = None  # old points
+        self.cap = None
+        self.prev_frame = None
+        self.prev_gray = None
+        self.roi = None
+        self.templ = None
 
-        self.x_points = None
-        self.y_points = None
-        self.x_error = None
-        self.y_error = None
+    def setMatchMethod(self, match_method):
+        self.match_method = match_method
 
     def load_video_sequence(self, filename: str):
         """Load and return the (.mp4) video specified by ``filename``.
@@ -50,89 +40,71 @@ class NewtonTracker:
 
         return self.cap
 
-    def select_roi(self):
+    def select_template(self):
         """Select ROI from first frame of image sequence.
 
             @return roi : Selected ROI or empty rect if selection canceled.
         """
-        ret, self.prev_frame = self.cap.read()
-        self.prev_gray = cv.cvtColor(self.prev_frame, cv.COLOR_BGR2GRAY)
-        self.roi = cv.selectROI("frame", self.prev_frame)
-
-        return self.roi
-
-    def get_initial_points(self):
-        """Get the initial points to track from the ROI."""
-        input_mask = np.zeros_like(self.prev_gray, np.uint8)
-        input_mask[
+        ret, self.img = self.cap.read()
+        self.gray_img = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY)
+        self.roi = cv.selectROI('frame', self.img)
+        self.templ = self.gray_img[
             int(self.roi[1]):int(self.roi[1]+self.roi[3]),
-            int(self.roi[0]):int(self.roi[0]+self.roi[2])
-        ] = self.prev_gray[int(self.roi[1]):int(self.roi[1]+self.roi[3]), int(self.roi[0]):int(self.roi[0]+self.roi[2])]
+            int(self.roi[0]):int(self.roi[0]+self.roi[2])]
+        cv.destroyAllWindows()
 
-        self.p0 = cv.goodFeaturesToTrack(
-            self.prev_gray, mask=input_mask, **self._feature_params)
-        shape = np.shape(self.p0)
-        
-        points = self.p0.reshape((shape[0], 2)).T
-        self.x_points = [points[0]]
-        self.y_points = [points[1]]
+        return self.templ
 
-        return self.p0
+    def match_template(self):
+        """Match the template image."""
+        img_display = self.img.copy()
+
+        method_accepts_mask = (
+            cv.TM_SQDIFF == self.match_method or self.match_method == cv.TM_CCORR_NORMED)
+        if (self.use_mask and method_accepts_mask):
+            result = cv.matchTemplate(
+                self.gray_img, self.templ, self.match_method, None, self.mask)
+        else:
+            result = cv.matchTemplate(
+                self.gray_img, self.templ, self.match_method)
+
+        cv.normalize(result, result, 0, 1, cv.NORM_MINMAX, -1)
+
+        _minVal, _maxVal, minLoc, maxLoc = cv.minMaxLoc(result, None)
+
+        if (self.match_method == cv.TM_SQDIFF or self.match_method == cv.TM_SQDIFF_NORMED):
+            matchLoc = minLoc
+        else:
+            matchLoc = maxLoc
+
+        cv.rectangle(img_display, matchLoc,
+                     (matchLoc[0] + self.templ.shape[0], matchLoc[1] + self.templ.shape[1]), (255, 0, 0), 2, 8, 0)
+        cv.imshow(self.image_window, img_display)
+        # cv.rectangle(result, matchLoc, (matchLoc[0] + self.templ.shape[0],
+        #              matchLoc[1] + self.templ.shape[1]), (0, 0, 0), 2, 8, 0)
+        print(matchLoc)
+        cv.imshow(self.templ_window, self.templ)
+        cv.imshow(self.templ_window, self.templ)
+        cv.imshow(self.diff_window, self.gray_img[
+            int(matchLoc[1]):int(matchLoc[1]+self.templ.shape[0]),
+            int(matchLoc[0]):int(matchLoc[0]+self.templ.shape[1])])
 
     def track(self):
-        """track"""
-        # Create a mask image for drawing purposes
-        mask = np.zeros_like(self.prev_frame)
-
+        """Track the template image."""
         while self.cap.isOpened():
-            ret, frame = self.cap.read()
+            ret, self.img = self.cap.read()
 
             if not ret:
                 break
 
-            gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+            self.gray_img = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY)
 
-            next_points, status, err = cv.calcOpticalFlowPyrLK(
-                self.prev_gray, gray, self.p0, None, **self._lk_params)
-            # Select good points
-            if next_points is not None:
-                good_new = next_points
-                good_old = self.p0
+            self.match_template()
 
-            # draw the tracks
-            for i, (new, old) in enumerate(zip(good_new, good_old)):
-                a, b = new.ravel()
-                c, d = old.ravel()
-                mask = cv.line(mask,
-                               (int(a), int(b)),
-                               (int(c), int(d)),
-                               self._color[i].tolist(),
-                               2)
-                frame = cv.circle(frame,
-                                  (int(a), int(b)),
-                                  5,
-                                  self._color[i].tolist(),
-                                  -1)
-            img = cv.add(frame, mask)
-
-            cv.imshow('frame', img)
-            
-            # Now update the previous frame and previous points
-            self.prev_gray = gray.copy()
-            self.p0 = good_new.reshape(-1, 1, 2)
-            points = self.p0.reshape((np.shape(self.p0)[0], 2)).T
-            self.x_points = np.append(self.x_points, [points[0]], axis=0)
-            self.y_points = np.append(self.y_points, [points[1]], axis=0)
-
-        
-            if cv.waitKey(1) == ord('q'):
-                break
-
+            cv.waitKey(1)
+        return
 
     def close_tracker(self):
         """Close all windows and release the VideoCapture."""
-        np.savetxt("x.csv", self.x_points, delimiter=",")
-        np.savetxt("y.csv", self.y_points, delimiter=",")
-
         self.cap.release()
         cv.destroyAllWindows()
