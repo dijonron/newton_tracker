@@ -1,15 +1,12 @@
 import matplotlib.pyplot as plt
 import cv2 as cv
 from cv2 import VideoCapture
-from matplotlib.pyplot import figure, flag
 import numpy as np
 import time
 
 
 class NewtonTracker:
-    """Newton Tracker
-
-    """
+    """Newton Tracker"""
 
     def __init__(self):
         self.use_mask = False
@@ -25,6 +22,9 @@ class NewtonTracker:
         self.prev_gray = None
         self.roi = None
         self.templ = None
+        self.search_area = None
+        self.p_0 = [0, 0]
+        self.p = [0, 0]
 
     def setMatchMethod(self, match_method):
         self.match_method = match_method
@@ -41,19 +41,19 @@ class NewtonTracker:
         return self.cap
 
     def select_template(self):
-        """Select ROI from first frame of image sequence.
-
-            @return roi : Selected ROI or empty rect if selection canceled.
-        """
-        ret, self.img = self.cap.read()
+        """Select template from first frame of image sequence."""
+        _, self.img = self.cap.read()
         self.gray_img = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY)
         self.roi = cv.selectROI('frame', self.img)
         self.templ = self.gray_img[
             int(self.roi[1]):int(self.roi[1]+self.roi[3]),
             int(self.roi[0]):int(self.roi[0]+self.roi[2])]
-        cv.destroyAllWindows()
 
-        return self.templ
+        self.search_area = np.add(self.roi, [-20, -20, 40, 40])
+        self.p_0 = self.roi[0:2]
+        self.p = self.p_0
+
+        return
 
     def match_template(self):
         """Match the template image."""
@@ -66,10 +66,8 @@ class NewtonTracker:
                 self.gray_img, self.templ, self.match_method, None, self.mask)
         else:
             result = cv.matchTemplate(
-                self.gray_img, self.templ, self.match_method)
-
+                self.mask, self.templ, self.match_method)
         cv.normalize(result, result, 0, 1, cv.NORM_MINMAX, -1)
-
         _minVal, _maxVal, minLoc, maxLoc = cv.minMaxLoc(result, None)
 
         if (self.match_method == cv.TM_SQDIFF or self.match_method == cv.TM_SQDIFF_NORMED):
@@ -77,17 +75,14 @@ class NewtonTracker:
         else:
             matchLoc = maxLoc
 
-        cv.rectangle(img_display, matchLoc,
-                     (matchLoc[0] + self.templ.shape[0], matchLoc[1] + self.templ.shape[1]), (255, 0, 0), 2, 8, 0)
+        u = np.subtract(matchLoc, self.p-self.search_area[0:2])
+        self.p = np.add(self.p, u)
+
+        cv.rectangle(img_display, self.p,
+                     (self.p[0] + self.templ.shape[1], self.p[1] + self.templ.shape[0]), (255, 0, 0), 2, 8, 0)
         cv.imshow(self.image_window, img_display)
-        # cv.rectangle(result, matchLoc, (matchLoc[0] + self.templ.shape[0],
-        #              matchLoc[1] + self.templ.shape[1]), (0, 0, 0), 2, 8, 0)
-        print(matchLoc)
-        cv.imshow(self.templ_window, self.templ)
-        cv.imshow(self.templ_window, self.templ)
-        cv.imshow(self.diff_window, self.gray_img[
-            int(matchLoc[1]):int(matchLoc[1]+self.templ.shape[0]),
-            int(matchLoc[0]):int(matchLoc[0]+self.templ.shape[1])])
+        
+        self.search_area = np.add(self.search_area, np.append(u, [0,0]))
 
     def track(self):
         """Track the template image."""
@@ -99,9 +94,11 @@ class NewtonTracker:
 
             self.gray_img = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY)
 
+            self.mask = self.gray_img[int(self.search_area[1]):int(self.search_area[1]+self.search_area[3]),
+                                      int(self.search_area[0]):int(self.search_area[0]+self.search_area[2])]
             self.match_template()
-
             cv.waitKey(1)
+
         return
 
     def close_tracker(self):
