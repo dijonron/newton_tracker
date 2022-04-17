@@ -26,8 +26,16 @@ class NewtonTracker:
         self.p_0 = [0, 0]
         self.p = [0, 0]
 
-    def setMatchMethod(self, match_method):
+        self.points = np.ndarray((1,2))
+
+    def setMatchMethod(self, match_method: str):
+        """Set the search method."""
         self.match_method = match_method
+
+    def addPoint(self, point: np.array):
+        """Add tracked point."""
+        self.points = np.append(self.points, [point], axis=0)
+
 
     def load_video_sequence(self, filename: str):
         """Load and return the (.mp4) video specified by ``filename``.
@@ -52,8 +60,7 @@ class NewtonTracker:
         self.search_area = np.add(self.roi, [-20, -20, 40, 40])
         self.p_0 = self.roi[0:2]
         self.p = self.p_0
-
-        return
+        self.addPoint(self.p)
 
     def match_template(self):
         """Match the template image."""
@@ -77,9 +84,10 @@ class NewtonTracker:
 
         u = np.subtract(matchLoc, self.p-self.search_area[0:2])
         self.p = np.add(self.p, u)
+        self.addPoint(self.p)
 
         cv.rectangle(img_display, self.p,
-                     (self.p[0] + self.templ.shape[1], self.p[1] + self.templ.shape[0]), (255, 0, 0), 2, 8, 0)
+                     (self.p[0] + self.templ.shape[1], self.p[1] + self.templ.shape[0]), (0, 0, 255), 2, 8, 0)
         cv.imshow(self.image_window, img_display)
         
         self.search_area = np.add(self.search_area, np.append(u, [0,0]))
@@ -97,9 +105,20 @@ class NewtonTracker:
             self.mask = self.gray_img[int(self.search_area[1]):int(self.search_area[1]+self.search_area[3]),
                                       int(self.search_area[0]):int(self.search_area[0]+self.search_area[2])]
             self.match_template()
+            
             cv.waitKey(1)
 
-        return
+    def plot(self):
+        """Plot tracked points."""
+        z = np.polyfit(self.points[1:-1, 0], np.negative(self.points[1:-1, 1]), 2)
+        f = np.poly1d(z)
+        x_new = np.linspace(0, 1900, 50)
+        y_new = f(x_new)
+
+        plt.plot(self.points[1:-1, 0], np.negative(self.points[1:-1, 1]), 'o', x_new, y_new, markersize=3)
+        plt.xlim([0, 1960])
+        plt.ylim([-1060, 0])
+        plt.show()
 
     def close_tracker(self):
         """Close all windows and release the VideoCapture."""

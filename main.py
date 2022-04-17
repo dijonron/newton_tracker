@@ -48,6 +48,7 @@ def main():
     tracker.load_video_sequence(sys.argv[1])
     tracker.select_template()
     tracker.track()
+    tracker.plot()
     tracker.close_tracker()
 
 
