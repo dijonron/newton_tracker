@@ -86,7 +86,7 @@ class NewtonTracker:
         if (abs(minVal) > self.thresh):
             self.predictUpdate()
             cv.rectangle(img_display, self.p,
-                     (self.p[0] + self.templ.shape[1], self.p[1] + self.templ.shape[0]), (0, 255, 0), 2, 8, 0)
+                     (self.p[0] + self.templ.shape[1], self.p[1] + self.templ.shape[0]), (0, 0, 255), 2, 8, 0)
             cv.imshow(self.image_window, img_display)
             u = self.points[-1] - self.points[-2]
             u = u.astype(int)
@@ -103,9 +103,9 @@ class NewtonTracker:
 
         self.addPoint(self.p)
         cv.rectangle(img_display, self.p,
-                     (self.p[0] + self.templ.shape[1], self.p[1] + self.templ.shape[0]), (0, 0, 255), 2, 8, 0)
+                     (self.p[0] + self.templ.shape[1], self.p[1] + self.templ.shape[0]), (0, 255, 0), 2, 8, 0)
         cv.imshow(self.image_window, img_display)
-        cv.imshow('mask', self.mask)
+        # cv.imshow('mask', self.mask)
         
         self.search_area = np.add(self.search_area, np.append(u, [0,0]))
 
@@ -133,13 +133,13 @@ class NewtonTracker:
         f = np.poly1d(z)
         y_prediction = f(x_prediction)
         self.p = [int(np.ceil(x_prediction)), int(np.ceil(y_prediction))]
-        print(self.p)
         self.addPoint(self.p)
 
     def plot(self, predict=False, *args):
         """Plot tracked points."""
         z = np.polyfit(self.points[1:-1, 0], np.negative(self.points[1:-1, 1]), 2)
         f = np.poly1d(z)
+        print(f)
         x_new = np.linspace(0, 1900, 50)
         y_new = f(x_new)
 
@@ -162,6 +162,13 @@ class NewtonTracker:
         dx = self.points[-1][0] - self.points[1][0]
         return dx/self.frame
 
+    def getInitialParams(self):
+        """Get initial params of motion."""
+        y0 = self.points[1][1]
+        v0 = (self.points[3] - self.points[1])/2
+        alpha = np.arctan(-v0[1]/v0[0])
+        print(v0, y0, alpha)
+        return y0, v0, alpha
 
     def close_tracker(self):
         """Close all windows and release the VideoCapture."""
