@@ -5,28 +5,30 @@ from lk_tracker import LKTracker
 from newton_tracker import NewtonTracker
 import cv2 as cv
 
+def print_help():
+    print('main.py -f <inputfile> -t <tracker> -m <method> -p')
+    print('\n\t-f --file\tThe filename of the video to track. Must be .mp4.')
+
+    print('\n\t-t --tracker\tThe type of tracker to use.')
+    print('\n\t\t\tOptions:\n\t\t\t\tLK\tLucas Kanade Optical Flow Point Tracker.\n\t\t\t\tN\tTemplate matching tracker, using Newton\'s Law\'s to update occluded state.')
+
+    print(
+        '\n\t-m --method\tMethod of matching template image to current frame. Only needed for Newton Tracker.')
+    print(
+        '\n\t\t\tOptions:\n\t\t\t\tTM_SQDIFF \n\t\t\t\tTM_SQDIFF_NORMED \n\t\t\t\tTM_CCORR \n\t\t\t\tTM_CCORR_NORMED')
 
 def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'hf:t:m:p', [
                                    'file=', 'tracker=', 'method=', 'plot'])
     except getopt.GetoptError:
-        print('main.py -f <filename> -t <tracker> -m <method> -p')
+        print_help()
         sys.exit(2)
 
     for opt, arg in opts:
         match opt:
             case '-h':
-                print('main.py -f <inputfile> -t <tracker> -m <method> -p')
-                print('\n\t-f --file\tThe filename of the video to track. Must be .mp4.')
-
-                print('\n\t-t --tracker\tThe type of tracker to use.')
-                print('\n\t\t\tOptions:\n\t\t\t\tLK\tLucas Kanade Optical Flow Point Tracker \n\t\t\t\tN\tTemplate matching tracker, using Newton\'s Law\'s to update occluded state.')
-
-                print(
-                    '\n\t-m --method\tMethod of matching template image to current frame. Only needed for Newton Tracker.')
-                print(
-                    '\n\t\t\tOptions:\n\t\t\t\tTM_SQDIFF \n\t\t\t\tTM_SQDIFF_NORMED \n\t\t\t\tTM_CCORR \n\t\t\t\tTM_CCORR_NORMED')
+                print_help()
                 sys.exit(2)
             case '-f' | '--file':
                 filename = arg
