@@ -7,17 +7,24 @@ Work complete for the final project portion of CMPUT 428 - Computer Vision, Univ
 # Usage
 
 ```
-main.py <video_name> <tracker_name> <method_name>
+main.py -f <file> -t <tracker> -m <method> -p
 
-Tracker Options:
-        LK      Lukas Kanade    - Basic open CV LK optical flow tracker
-        N       Newton Tracker  - Template matching tracker using Newton's Laws to update search area when tracking lost
+        -f --file       The filename of the video to track. Must be .mp4.
 
-Method Options:
-        TM_SQDIFF               - Sum of Square Differences
-        TM_SQDIFF_NORMED        - Not supported
-        TM_CCORR                - Not supported
-        TM_CCORR_NORMED         - Not supported
+        -t --tracker    The type of tracker to use.
+
+                        Options:
+                                LK      Lucas Kanade Optical Flow Point Tracker.
+                                N       Template matching tracker, using Newton's Law's to update occluded state.
+
+        -m --method     Method of matching template image to current frame. Only needed for Newton Tracker.
+
+                        Options:
+                                TM_SQDIFF
+                                TM_SQDIFF_NORMED
+                                TM_CCORR
+                                TM_CCORR_NORMED
+
 ```
 
 # Contributors

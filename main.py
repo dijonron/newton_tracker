@@ -6,7 +6,7 @@ from newton_tracker import NewtonTracker
 import cv2 as cv
 
 def print_help():
-    print('main.py -f <inputfile> -t <tracker> -m <method> -p')
+    print('main.py -f <file> -t <tracker> -m <method> -p')
     print('\n\t-f --file\tThe filename of the video to track. Must be .mp4.')
 
     print('\n\t-t --tracker\tThe type of tracker to use.')
