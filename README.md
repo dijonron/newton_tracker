@@ -15,9 +15,11 @@ main.py -f <file> -t <tracker> -m <method> -p
 
                         Options:
                                 LK      Lucas Kanade Optical Flow Point Tracker.
+                                T       Template matching tracker.
                                 N       Template matching tracker, using Newton's Law's to update occluded state.
 
-        -m --method     Method of matching template image to current frame. Only needed for Newton Tracker.
+        -m --method     Method of matching template image to current frame.
+                        Only needed for Template or Newton Tracker.
 
                         Options:
                                 TM_SQDIFF
@@ -25,6 +27,9 @@ main.py -f <file> -t <tracker> -m <method> -p
                                 TM_CCORR
                                 TM_CCORR_NORMED
 
+        -p --plot       Plot the final trajectory of the object.
+
+        -d --delay      Delay, in milliseconds, between showing next frame.
 ```
 
 # Contributors

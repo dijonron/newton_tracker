@@ -25,6 +25,8 @@ def print_help():
 
     print('\n\t-p --plot\tPlot the final trajectory of the object.')
 
+    print('\n\t-d --delay\tDelay, in milliseconds, between showing next frame.')
+
 def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'hf:t:m:pd:', [
