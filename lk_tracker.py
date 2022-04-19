@@ -5,7 +5,7 @@ import numpy as np
 
 class LKTracker:
     """LK Tracker
-    
+
     A basic tracker class that uses the opencv LK point tracker.
     """
 
