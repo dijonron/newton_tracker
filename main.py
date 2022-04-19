@@ -49,8 +49,8 @@ def main():
                 match_method = arg
             case '-p' | '--plot':
                 plot = True
-            case 'd' | '--delay':
-                delay = arg
+            case '-d' | '--delay':
+                delay = int(arg)
 
     match tracker_arg:
         case 'LK':

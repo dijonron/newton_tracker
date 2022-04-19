@@ -42,7 +42,7 @@ class NewtonTracker:
         thresh: The confidence threshold for template matching.
     """
 
-    def __init__(self, plot: bool = False, delay: int =1):
+    def __init__(self, plot: bool = False, delay: int = 1):
         """Inits the tracker.
         
         @arg plot (:py:type:`bool`): Boolean flag for plotting final trajectory.
@@ -66,6 +66,7 @@ class NewtonTracker:
         self.p_0 = np.array([0, 0])
         self.p = np.array([0, 0])
         self.points = np.ndarray((1, 2))
+        self.predictions = np.array([0])
 
         self.plot = plot
         self.delay = delay
@@ -113,6 +114,7 @@ class NewtonTracker:
         self.p_0 = self.roi[0:2]
         self.p = self.p_0
         self.add_point(self.p)
+        self.predictions = np.append(self.predictions, 0)
 
     def match_template(self):
         """Match the template image."""
@@ -150,10 +152,10 @@ class NewtonTracker:
         self.p = np.add(self.p, u)
 
         self.add_point(self.p)
+        self.predictions = np.append(self.predictions, 0)
         cv.rectangle(img_display, self.p,
                      (self.p[0] + self.templ.shape[1], self.p[1] + self.templ.shape[0]), (0, 255, 0), 2, 8, 0)
         cv.imshow(self.image_window, img_display)
-        # cv.imshow('mask', self.mask)
 
         self.search_area = np.add(self.search_area, np.append(u, [0, 0]))
 
@@ -175,7 +177,6 @@ class NewtonTracker:
             self.mask = self.gray_img[int(self.search_area[1]):int(self.search_area[1]+self.search_area[3]),
                                       int(self.search_area[0]):int(self.search_area[0]+self.search_area[2])]
             self.match_template()
-
             cv.waitKey(self.delay)
 
     def predict_update(self):
@@ -187,27 +188,28 @@ class NewtonTracker:
         y_prediction = f(x_prediction)
         self.p = [int(np.ceil(x_prediction)), int(np.ceil(y_prediction))]
         self.add_point(self.p)
+        self.predictions = np.append(self.predictions, 1)
 
-    def plot_trajectory(self, predict=False):
-        """Plot tracked points.
-
-        """
+    def plot_trajectory(self):
+        """Plot tracked points."""
         z = np.polyfit(self.points[1:-1, 0],
                        np.negative(self.points[1:-1, 1]), 2)
         f = np.poly1d(z)
         x_new = np.linspace(0, 1900, 50)
         y_new = f(x_new)
 
-        plt.plot(self.points[1:-1, 0], np.negative(self.points[1:-1, 1]),
-                 'o', x_new, y_new, markersize=3)
+        measured_points = self.points[self.predictions == 0]
+        predicted_points = self.points[self.predictions == 1]
 
-        if predict:
-            velocity = self.get_velocity()
-            x_prediction = self.points[-1][0] + velocity
-            plt.plot(x_prediction, f(x_prediction), 'rx')
+        plt.plot(x_new, y_new, '--')
+        plt.plot(measured_points[1:-1, 0], np.negative(measured_points[1:-1, 1]),
+                 'go', markersize=3)
+        plt.plot(predicted_points[1:-1, 0], np.negative(predicted_points[1:-1, 1]),
+                 'rx', markersize=3)
 
         plt.xlim([0, 1960])
         plt.ylim([-1060, 0])
+        plt.legend(['Calculate Trajectory', 'Measured Points', 'Predicted Points'])
         plt.show()
 
     def get_velocity(self) -> float:

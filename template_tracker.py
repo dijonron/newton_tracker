@@ -29,6 +29,8 @@ class TemplateTracker:
 
         p: A :py:class:`numpy.ndarray` containing the latest template match position.
 
+        delay (:py:type:`int`) The delay in milliseconds between frames.
+
         points: A :py:class:`numpy.ndarray` containing all of the tracked points from the sequence.
 
         frame: An :py:class:`int` representing the current frame of the sequence. 
@@ -36,7 +38,7 @@ class TemplateTracker:
         thresh: The confidence threshold for template matching.
     """
 
-    def __init__(self, plot=False):
+    def __init__(self, plot: bool = False, delay: int = 1):
         self.use_mask = False
         self.mask = None
         self.image_window = "Source Image"
@@ -54,6 +56,7 @@ class TemplateTracker:
         self.p = np.array([0, 0])
         self.points = np.ndarray((1, 2))
         self.plot = plot
+        self.delay = delay
 
         self.frame = 0
         self.thresh = 3e-9
@@ -133,13 +136,11 @@ class TemplateTracker:
 
         self.search_area = np.add(self.search_area, np.append(u, [0, 0]))
 
-    def track(self, delay: int = 1):
+    def track(self):
         """Track the template image.
 
         This is the main function of the tracker. It will read all the frames of the video sequence, and call
         :py:method:`NewtonTracker.match_template()` to update the state of the tracker.
-
-        @arg delay (:py:type:`int`) Delay in milliseconds. 0 is the special value that means "forever".
         """
         while self.cap.isOpened():
             ret, self.img = self.cap.read()
@@ -154,7 +155,7 @@ class TemplateTracker:
                                       int(self.search_area[0]):int(self.search_area[0]+self.search_area[2])]
             self.match_template()
 
-            cv.waitKey(delay)
+            cv.waitKey(self.delay)
 
     def plot(self, predict=False):
         """Plot tracked points.
