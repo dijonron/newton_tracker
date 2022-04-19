@@ -33,13 +33,13 @@ def main():
             case '-f' | '--file':
                 filename = arg
             case '-t' | '--tracker':
-                tracker = arg
+                tracker_arg = arg
             case '-m' | '--match-method':
                 match_method = arg
             case '-p' | '--plot':
                 plot = arg
 
-    match tracker:
+    match tracker_arg:
         case 'LK':
             tracker = LKTracker()
         case 'N':
@@ -52,31 +52,31 @@ def main():
                 '\nMethod Options:\n\t\tTM_SQDIFF \n\t\tTM_SQDIFF_NORMED \n\t\tTM_CCORR \n\t\tTM_CCORR_NORMED')
             return
 
-    match match_method:
-        case 'TM_SQDIFF':
-            tracker.setMatchMethod(cv.TM_SQDIFF)
-        case 'TM_SQDIFF_NORMED':
-            tracker.setMatchMethod(cv.TM_SQDIFF_NORMED)
-        case 'TM_CCORR':
-            tracker.setMatchMethod(cv.TM_CCORR)
-        case 'TM_CCORR_NORMED':
-            tracker.setMatchMethod(cv.TM_CCORR_NORMED)
-        case 'TM_CCOEFF':
-            tracker.setMatchMethod(cv.TM_CCOEFF)
-        case 'TM_CCOEFF_NORMED':
-            tracker.setMatchMethod(cv.TM_CCOEFF_NORMED)
-        case _:
-            print('Error: Invalid matching method.')
-            print('\n\nUsage:\n\tmain.py <video_name> <tracker_name> <method_name>')
-            print('\nTracker Options:\n\t\tLK \n\t\tN')
-            print(
-                '\nMethod Options:\n\t\tTM_SQDIFF \n\t\tTM_SQDIFF_NORMED \n\t\tTM_CCORR \n\t\tTM_CCORR_NORMED')
-            return
+    if tracker_arg == 'N':
+        match match_method:
+            case 'TM_SQDIFF':
+                tracker.setMatchMethod(cv.TM_SQDIFF)
+            case 'TM_SQDIFF_NORMED':
+                tracker.setMatchMethod(cv.TM_SQDIFF_NORMED)
+            case 'TM_CCORR':
+                tracker.setMatchMethod(cv.TM_CCORR)
+            case 'TM_CCORR_NORMED':
+                tracker.setMatchMethod(cv.TM_CCORR_NORMED)
+            case 'TM_CCOEFF':
+                tracker.setMatchMethod(cv.TM_CCOEFF)
+            case 'TM_CCOEFF_NORMED':
+                tracker.setMatchMethod(cv.TM_CCOEFF_NORMED)
+            case _:
+                print('Error: Invalid matching method.')
+                print('\n\nUsage:\n\tmain.py <video_name> <tracker_name> <method_name>')
+                print('\nTracker Options:\n\t\tLK \n\t\tN')
+                print(
+                    '\nMethod Options:\n\t\tTM_SQDIFF \n\t\tTM_SQDIFF_NORMED \n\t\tTM_CCORR \n\t\tTM_CCORR_NORMED')
+                return
 
     tracker.load_video_sequence(filename)
     tracker.select_template()
     tracker.track()
-    tracker.getInitialParams()
     tracker.close_tracker()
 
 
