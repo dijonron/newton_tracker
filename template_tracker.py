@@ -157,7 +157,7 @@ class TemplateTracker:
 
             cv.waitKey(self.delay)
 
-    def plot(self, predict=False):
+    def plot_trajectory(self, predict=False):
         """Plot tracked points.
 
         """
@@ -166,20 +166,21 @@ class TemplateTracker:
         f = np.poly1d(z)
         x_new = np.linspace(0, 1900, 50)
         y_new = f(x_new)
-
+        # np.savetxt("baseline.csv", self.points, delimiter=",")
+        plt.plot(x_new, y_new, '--')
         plt.plot(self.points[1:-1, 0], np.negative(self.points[1:-1, 1]),
-                 'o', x_new, y_new, markersize=3)
-
-        if predict:
-            velocity = self.get_velocity()
-            x_prediction = self.points[-1][0] + velocity
-            plt.plot(x_prediction, f(x_prediction), 'rx')
+                 'go', markersize=3)
+        plt.title('Baseline Measurement')
 
         plt.xlim([0, 1960])
         plt.ylim([-1060, 0])
+        plt.legend(['Calculate Trajectory', 'Measured Points'])
         plt.show()
 
     def close_tracker(self):
         """Close all windows and release the VideoCapture."""
         self.cap.release()
         cv.destroyAllWindows()
+
+        if self.plot:
+            self.plot_trajectory()

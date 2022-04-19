@@ -1,6 +1,6 @@
 import getopt
 import sys
-
+import time
 import cv2 as cv
 
 from lk_tracker import LKTracker
@@ -83,8 +83,10 @@ def main():
 
     tracker.load_video_sequence(filename)
     tracker.select_template()
+    # start_time = time.time()
     tracker.track()
     tracker.close_tracker()
+    # print("--- %s seconds ---" % (time.time() - start_time))
 
 
 if __name__ == '__main__':
