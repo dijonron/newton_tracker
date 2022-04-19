@@ -197,9 +197,10 @@ class NewtonTracker:
         f = np.poly1d(z)
         x_new = np.linspace(0, 1900, 50)
         y_new = f(x_new)
-
         measured_points = self.points[self.predictions == 0]
         predicted_points = self.points[self.predictions == 1]
+        # np.savetxt("prediction_measured.csv", measured_points, delimiter=",")
+        # np.savetxt("prediction_predicted.csv", predicted_points, delimiter=",")
 
         plt.plot(x_new, y_new, '--')
         plt.plot(measured_points[1:-1, 0], np.negative(measured_points[1:-1, 1]),
