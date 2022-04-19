@@ -5,7 +5,7 @@ import numpy as np
 
 class LKTracker:
     """LK Tracker
-    
+
     A basic tracker class that uses the opencv LK point tracker.
     """
 
@@ -41,7 +41,7 @@ class LKTracker:
 
         return self.cap
 
-    def select_roi(self):
+    def select_template(self):
         """Select ROI from first frame of image sequence.
 
             @return roi : Selected ROI or empty rect if selection canceled.
@@ -49,6 +49,8 @@ class LKTracker:
         ret, self.prev_frame = self.cap.read()
         self.prev_gray = cv.cvtColor(self.prev_frame, cv.COLOR_BGR2GRAY)
         self.roi = cv.selectROI("frame", self.prev_frame)
+
+        self.get_initial_points()
 
         return self.roi
 
