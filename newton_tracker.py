@@ -1,8 +1,8 @@
-import matplotlib.pyplot as plt
 import cv2 as cv
-from cv2 import VideoCapture
+import matplotlib.pyplot as plt
 import numpy as np
-import time
+
+from cv2 import VideoCapture
 
 
 class NewtonTracker:
@@ -10,28 +10,55 @@ class NewtonTracker:
     
     Template matching based track the uses the objects trajectory to predict its next 
     state update when the confidence of match is below a threshold value.
+
+    Attributes:
+    ----------
+        cap: A :py:class:`cv2.VideoCapture` object. Holds the video sequence being analysed. 
+
+        img: A :py:class:`numpy.ndarray` representing the current image frame of the video sequence from :py:class:`NewtonTracker.cap`.
+
+        gray_img: A :py:class:`numpy.ndarray` representing a grayscale copy of :py:class:`NewtonTracker.img`.
+
+        roi: A :py:class:`tuple` represneting the selected roi.
+
+        templ: A :py:class:`numpy.ndarray` representing the template image that is being tracked.
+
+        search_area: A :py:class:`numpy.ndarray` representing the search area that the tracker is looking to match the template in.
+
+        match_method: The :py:calss:`cv.TemplateMatchModes` being used to match the template to the image.
+
+        p_0: A :py:class:`numpy.ndarray` containing the initial template match position.
+
+        p: A :py:class:`numpy.ndarray` containing the latest template match position.
+
+        points: A :py:class:`numpy.ndarray` containing all of the tracked points from the sequence.
+
+        frame: An :py:class:`int` representing the current frame of the sequence. 
+
+        thresh: The confidence threshold for template matching.
     """
 
     def __init__(self):
         self.use_mask = False
-        self.img = None
         self.mask = None
         self.image_window = "Source Image"
         self.templ_window = "Template Window"
         self.diff_window = "Diff Window"
-        self.match_method = None
-        self.frame = 0
-        self.thresh = 3e-9
+
 
         self.cap = None
-        self.prev_frame = None
-        self.prev_gray = None
+        self.img = None
+        self.gray_img = None
         self.roi = None
         self.templ = None
         self.search_area = None
-        self.p_0 = [0, 0]
-        self.p = [0, 0]
+        self.match_method = None
+        self.p_0 = np.array([0, 0])
+        self.p = np.array([0, 0])
         self.points = np.ndarray((1, 2))
+
+        self.frame = 0
+        self.thresh = 3e-9
 
     def set_match_method(self, match_method: str):
         """Set the search method.
@@ -65,6 +92,7 @@ class NewtonTracker:
         # self.gray_img = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY)
         self.gray_img = self.img
         self.roi = cv.selectROI('frame', self.img)
+
         self.templ = self.gray_img[
             int(self.roi[1]):int(self.roi[1]+self.roi[3]),
             int(self.roi[0]):int(self.roi[0]+self.roi[2])]
@@ -72,7 +100,7 @@ class NewtonTracker:
         self.search_area = np.add(self.roi, [-20, -20, 40, 40])
         self.p_0 = self.roi[0:2]
         self.p = self.p_0
-        self.addPoint(self.p)
+        self.add_point(self.p)
 
     def match_template(self):
         """Match the template image."""
@@ -92,7 +120,7 @@ class NewtonTracker:
         minVal, _maxVal, minLoc, maxLoc = cv.minMaxLoc(result, None)
 
         if (abs(minVal) > self.thresh):
-            self.predictUpdate()
+            self.predict_update()
             cv.rectangle(img_display, self.p,
                          (self.p[0] + self.templ.shape[1], self.p[1] + self.templ.shape[0]), (0, 0, 255), 2, 8, 0)
             cv.imshow(self.image_window, img_display)
@@ -109,7 +137,7 @@ class NewtonTracker:
         u = np.subtract(matchLoc, self.p-self.search_area[0:2])
         self.p = np.add(self.p, u)
 
-        self.addPoint(self.p)
+        self.add_point(self.p)
         cv.rectangle(img_display, self.p,
                      (self.p[0] + self.templ.shape[1], self.p[1] + self.templ.shape[0]), (0, 255, 0), 2, 8, 0)
         cv.imshow(self.image_window, img_display)
@@ -142,13 +170,13 @@ class NewtonTracker:
 
     def predict_update(self):
         """ Predict the next location of the ROI based on the calculated trajectory of the object."""
-        velocity = self.getVelocity()
+        velocity = self.get_velocity()
         x_prediction = self.points[-1][0] + velocity
         z = np.polyfit(self.points[1:-1, 0], self.points[1:-1, 1], 2)
         f = np.poly1d(z)
         y_prediction = f(x_prediction)
         self.p = [int(np.ceil(x_prediction)), int(np.ceil(y_prediction))]
-        self.addPoint(self.p)
+        self.add_point(self.p)
 
     def plot(self, predict=False):
         """Plot tracked points.
@@ -164,7 +192,7 @@ class NewtonTracker:
                  'o', x_new, y_new, markersize=3)
 
         if predict:
-            velocity = self.getVelocity()
+            velocity = self.get_velocity()
             x_prediction = self.points[-1][0] + velocity
             plt.plot(x_prediction, f(x_prediction), 'rx')
 
@@ -181,11 +209,18 @@ class NewtonTracker:
         return dx/self.frame
 
     def get_initial_params(self):
-        """Get initial params of motion."""
+        """Get initial params of motion.
+        
+        @return y0: The y pixel coord of the initial match 
+        
+        @return v0: The initial velocity estimation
+
+        @return alpha: The initial angle estimation
+        """
         y0 = self.points[1][1]
         v0 = (self.points[3] - self.points[1])/2
         alpha = np.arctan(-v0[1]/v0[0])
-        print(v0, y0, alpha)
+
         return y0, v0, alpha
 
     def close_tracker(self):

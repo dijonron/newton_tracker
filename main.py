@@ -1,9 +1,11 @@
-import sys
 import getopt
+import sys
+
+import cv2 as cv
 
 from lk_tracker import LKTracker
 from newton_tracker import NewtonTracker
-import cv2 as cv
+
 
 def print_help():
     print('main.py -f <file> -t <tracker> -m <method> -p')
@@ -55,17 +57,17 @@ def main():
     if tracker_arg == 'N':
         match match_method:
             case 'TM_SQDIFF':
-                tracker.setMatchMethod(cv.TM_SQDIFF)
+                tracker.set_match_method(cv.TM_SQDIFF)
             case 'TM_SQDIFF_NORMED':
-                tracker.setMatchMethod(cv.TM_SQDIFF_NORMED)
+                tracker.set_match_method(cv.TM_SQDIFF_NORMED)
             case 'TM_CCORR':
-                tracker.setMatchMethod(cv.TM_CCORR)
+                tracker.set_match_method(cv.TM_CCORR)
             case 'TM_CCORR_NORMED':
-                tracker.setMatchMethod(cv.TM_CCORR_NORMED)
+                tracker.set_match_method(cv.TM_CCORR_NORMED)
             case 'TM_CCOEFF':
-                tracker.setMatchMethod(cv.TM_CCOEFF)
+                tracker.set_match_method(cv.TM_CCOEFF)
             case 'TM_CCOEFF_NORMED':
-                tracker.setMatchMethod(cv.TM_CCOEFF_NORMED)
+                tracker.set_match_method(cv.TM_CCOEFF_NORMED)
             case _:
                 print('Error: Invalid matching method.')
                 print('\n\nUsage:\n\tmain.py <video_name> <tracker_name> <method_name>')
