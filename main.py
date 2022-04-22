@@ -4,7 +4,7 @@ import time
 import cv2 as cv
 
 from lk_tracker import LKTracker
-from newton_tracker import NewtonTracker
+from projectile_tracker import ProjectileTracker
 from template_tracker import TemplateTracker
 
 
@@ -15,6 +15,7 @@ def print_help():
     print('\n\t-t --tracker\tThe type of tracker to use.')
     print('\n\t\t\tOptions:\n\t\t\t\tLK\tLucas Kanade Optical Flow Point Tracker.\
     \n\t\t\t\tT\tTemplate matching tracker.\
+    \n\t\t\t\tP\T matching tracker, using interpolated parabola to update occluded state.\
     \n\t\t\t\tN\tTemplate matching tracker, using Newton\'s Law\'s to update occluded state.')
 
     print(
@@ -57,13 +58,13 @@ def main():
             tracker = LKTracker()
         case 'T':
             tracker = TemplateTracker(plot, delay)
-        case 'N':
-            tracker = NewtonTracker(plot, delay)
+        case 'P':
+            tracker = ProjectileTracker(plot, delay)
         case _:
             print_help()
             sys.exit(2)
 
-    if tracker_arg in('N', 'T'):
+    if tracker_arg in('N', 'P', 'T'):
         match match_method:
             case 'TM_SQDIFF':
                 tracker.set_match_method(cv.TM_SQDIFF)

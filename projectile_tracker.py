@@ -5,8 +5,8 @@ import numpy as np
 from cv2 import VideoCapture
 
 
-class NewtonTracker:
-    """Newton Tracker
+class ProjectileTracker:
+    """Projectile Tracker
 
     Template matching based tracker the uses the objects trajectory to predict its next 
     state update when the confidence of match is below a threshold value.
@@ -15,9 +15,9 @@ class NewtonTracker:
     ----------
         cap: A :py:class:`cv2.VideoCapture` object. Holds the video sequence being analysed. 
 
-        img: A :py:class:`numpy.ndarray` representing the current image frame of the video sequence from :py:class:`NewtonTracker.cap`.
+        img: A :py:class:`numpy.ndarray` representing the current image frame of the video sequence from :py:class:`ProjectileTracker.cap`.
 
-        gray_img: A :py:class:`numpy.ndarray` representing a grayscale copy of :py:class:`NewtonTracker.img`.
+        gray_img: A :py:class:`numpy.ndarray` representing a grayscale copy of :py:class:`ProjectileTracker.img`.
 
         roi: A :py:class:`tuple` represneting the selected roi.
 
@@ -163,7 +163,7 @@ class NewtonTracker:
         """Track the template image.
 
         This is the main function of the tracker. It will read all the frames of the video sequence, and call
-        :py:method:`NewtonTracker.match_template()` to update the state of the tracker.
+        :py:method:`ProjectileTracker.match_template()` to update the state of the tracker.
         """
         while self.cap.isOpened():
             ret, self.img = self.cap.read()
