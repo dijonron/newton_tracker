@@ -1,12 +1,13 @@
 import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
+import sys 
 
 from cv2 import VideoCapture
 
 
-class ProjectileTracker:
-    """Projectile Tracker
+class NewtonTracker:
+    """Newton Tracker
 
     Template matching based tracker the uses the objects trajectory to predict its next 
     state update when the confidence of match is below a threshold value.
@@ -15,9 +16,9 @@ class ProjectileTracker:
     ----------
         cap: A :py:class:`cv2.VideoCapture` object. Holds the video sequence being analysed. 
 
-        img: A :py:class:`numpy.ndarray` representing the current image frame of the video sequence from :py:class:`ProjectileTracker.cap`.
+        img: A :py:class:`numpy.ndarray` representing the current image frame of the video sequence from :py:class:`NewtonTracker.cap`.
 
-        gray_img: A :py:class:`numpy.ndarray` representing a grayscale copy of :py:class:`ProjectileTracker.img`.
+        gray_img: A :py:class:`numpy.ndarray` representing a grayscale copy of :py:class:`NewtonTracker.img`.
 
         roi: A :py:class:`tuple` represneting the selected roi.
 
@@ -130,7 +131,7 @@ class ProjectileTracker:
         else:
             result = cv.matchTemplate(
                 self.mask, self.templ, self.match_method)
-        # cv.normalize(result, result, 1, 0, cv.NORM_MINMAX, -1)
+         # cv.normalize(result, result, 1, 0, cv.NORM_MINMAX, -1)
         minVal, maxVal, minLoc, maxLoc = cv.minMaxLoc(result, None)
 
         if (self.match_method == cv.TM_SQDIFF or self.match_method == cv.TM_SQDIFF_NORMED):
@@ -168,7 +169,7 @@ class ProjectileTracker:
         """Track the template image.
 
         This is the main function of the tracker. It will read all the frames of the video sequence, and call
-        :py:method:`ProjectileTracker.match_template()` to update the state of the tracker.
+        :py:method:`NewtonTracker.match_template()` to update the state of the tracker.
         """
         while self.cap.isOpened():
             ret, self.img = self.cap.read()
@@ -186,12 +187,12 @@ class ProjectileTracker:
 
     def predict_update(self):
         """ Predict the next location of the ROI based on the calculated trajectory of the object."""
-        velocity = self.get_velocity()
-        x_prediction = self.points[-1][0] + velocity
-        z = np.polyfit(self.points[1:-1, 0], self.points[1:-1, 1], 2)
-        f = np.poly1d(z)
-        y_prediction = f(x_prediction)
-        self.p = [int(np.ceil(x_prediction)), int(np.ceil(y_prediction))]
+        v_x, v_y = self.get_velocity()
+        a_x, a_y = self.get_acceleration(v_x, v_y)
+       
+        x_pred = self.points[-1][0] + v_x[-1] + 0.5 * a_x
+        y_pred = self.points[-1][1] + v_y[-1] + 0.5 * a_y
+        self.p = [int(np.ceil(x_pred)), int(np.ceil(y_pred))]
         self.add_point(self.p)
         self.predictions = np.append(self.predictions, 1)
 
@@ -207,24 +208,47 @@ class ProjectileTracker:
         # np.savetxt("prediction_measured.csv", measured_points, delimiter=",")
         # np.savetxt("prediction_predicted.csv", predicted_points, delimiter=",")
 
-        plt.plot(x_new, y_new, '--')
+        # plt.plot(x_new, y_new, '--')
         plt.plot(measured_points[1:-1, 0], np.negative(measured_points[1:-1, 1]),
                  'go', markersize=3)
         plt.plot(predicted_points[1:-1, 0], np.negative(predicted_points[1:-1, 1]),
                  'rx', markersize=3)
-
+        plt.title('General Motion Measurement')
+        plt.xlabel('x pixel coordinate')
+        plt.ylabel('y pixel coordinate')
         plt.xlim([0, 1960])
         plt.ylim([-1060, 0])
-        plt.legend(['Calculate Trajectory', 'Measured Points', 'Predicted Points'])
+        plt.legend(['Measured Points', 'Predicted Points'])
         plt.show()
 
-    def get_velocity(self) -> float:
-        """Return the x velocity of the tracked object [pixels/frame].
+    def get_velocity(self):
+        """Return the velocity of the tracked object [pixels/frame].
 
-        @return velocity (float): The x velocity
+        @return v_x, v_y (float, float): The x and y velocity
         """
-        dx = self.points[-1][0] - self.points[1][0]
-        return dx/self.frame
+        if (len(self.points) >= 3 ):
+            x = self.points.T[:][0][-4:-1]
+            y = self.points.T[:][1][-4:-1]
+            v_x = [x[2]-x[1], x[1]-x[0]]
+            v_y = [y[2]-y[1], y[1]-y[0]]
+            return v_x, v_y
+        else:
+            print('Error: Not enough points captured to predict')
+            sys.exit(2)
+        
+
+    def get_acceleration(self, v_x, v_y):
+        """Return the acceleration of the tracked object [pixels/frame^2].
+
+        @return a_x, a_y (float, float): The x and y acceleration
+        """
+        if (len(self.points) >= 3 ):
+            a_x = v_x[-1] - v_x[0]
+            a_y = v_y[-1] - v_y[0]
+            return a_x, a_y
+        else:
+            print('Error: Not enough points captured to predict')
+            sys.exit(2)
 
     def get_initial_params(self):
         """Get initial params of motion.
